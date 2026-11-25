@@ -1,0 +1,12 @@
+{
+  "name": "klox-tools",
+  "private": true,
+  "description": "Builds web/fb.js (the Firebase pieces the site uses) and runs the local tests with the Firebase emulators.",
+  "scripts": {
+    "build:fb": "esbuild fb-entry.js --bundle --format=esm --minify --target=es2020 --outfile=../web/fb.js",
+    "emulators": "firebase emulators:start --project demo-klox --config firebase.json",
+    "test": "node ../tests/e2e.js",
+    "test:import": "node ../tests/imp.js"
+  },
+  "devDependencies": { "esbuild": "0.25.0", "firebase": "13.2.0", "firebase-tools": "14.27.0", "playwright": "1.63.0" }
+}

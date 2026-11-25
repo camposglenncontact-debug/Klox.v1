@@ -1,0 +1,30 @@
+rules_version = '2';
+// Who can use the site: one document per person in "members", named by their Google email,
+// with { id: "<their id in the notes>", owner: true|false }. Only the owner can add or remove people.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email is string && request.auth.token.email_verified == true; }
+    function entry() { return /databases/$(database)/documents/members/$(request.auth.token.email); }
+    function isMember() { return signedIn() && exists(entry()); }
+    function myId() { return get(entry()).data.id; }
+    function isOwner() { return isMember() && get(entry()).data.owner == true; }
+
+    match /members/{email} {
+      allow read: if isMember() || (signedIn() && request.auth.token.email == email);
+      allow write: if isOwner();
+    }
+    // each person's own corner: bubbles, desk notes, private reminders
+    match /data/users/{mid}/{rest=**} {
+      allow read, write: if isMember() && myId() == mid;
+    }
+    // name and photo of each person; everyone in the team reads them, each one writes their own
+    match /profiles/{mid} {
+      allow read: if isMember();
+      allow write: if isMember() && myId() == mid;
+    }
+    // everything else is shared by the team
+    match /{col}/{rest=**} {
+      allow read, write: if isMember() && !(col in ['members', 'data', 'profiles']);
+    }
+  }
+}
